@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0-tizen8.0</TargetFramework>
+    <RootNamespace>TunelProxy</RootNamespace>
+    <AssemblyName>TunelProxy</AssemblyName>
+    <DebugType>portable</DebugType>
+    <!-- net6.0 é o runtime que as TVs Tizen 8+ trazem; o aviso de fim de suporte é esperado. -->
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+  </PropertyGroup>
+
+  <!-- Binário Go (ARMv7) compilado pelo workflow antes do dotnet build. -->
+  <ItemGroup>
+    <Content Include="lib\tunelproxy">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <TizenIncludeInPackage>true</TizenIncludeInPackage>
+    </Content>
+  </ItemGroup>
+
+</Project>

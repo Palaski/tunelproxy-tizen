@@ -1,0 +1,6 @@
+App/bin/
+App/obj/
+App/lib/tunelproxy
+*.tpk
+*.conf
+proxy/go.sum

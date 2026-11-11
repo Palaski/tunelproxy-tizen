@@ -1,0 +1,62 @@
+name: Compilar .tpk
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: false
+
+      - name: Testar e compilar o túnel (Go, ARMv7)
+        working-directory: proxy
+        run: |
+          go get golang.zx2c4.com/wireguard@latest
+          go mod tidy
+          go vet ./...
+          go test -tags nowg ./...
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 \
+            go build -trimpath -ldflags="-s -w" -o ../App/lib/tunelproxy .
+          file ../App/lib/tunelproxy
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Instalar o workload do Tizen
+        run: |
+          curl -sSL https://raw.githubusercontent.com/Samsung/Tizen.NET/main/workload/scripts/workload-install.sh -o workload-install.sh
+          sudo bash workload-install.sh -d "$DOTNET_ROOT"
+          dotnet workload list
+
+      - name: Compilar o app (.tpk sem assinatura)
+        working-directory: App
+        run: |
+          dotnet build -c Release
+          find bin -name '*.tpk' -exec cp {} ../TunelProxy.tpk \;
+          ls -l ../TunelProxy.tpk
+          unzip -l ../TunelProxy.tpk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TunelProxy-tpk
+          path: TunelProxy.tpk
+
+      - name: Publicar release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "build-${{ github.run_number }}" TunelProxy.tpk \
+            --title "TunelProxy build ${{ github.run_number }}" \
+            --notes "Commit ${{ github.sha }}. Instale com o Apps2Samsung."

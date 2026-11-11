@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns="http://tizen.org/ns/packages" api-version="8.0" package="com.palaski.tunelproxy" version="0.1.0">
+  <profile name="tv" />
+  <ui-application appid="com.palaski.tunelproxy"
+                  exec="TunelProxy.dll"
+                  type="dotnet"
+                  multiple="false"
+                  taskmanage="true"
+                  nodisplay="false"
+                  api-version="11">
+    <label>TunelProxy</label>
+    <icon>icone.png</icon>
+    <splash-screens />
+  </ui-application>
+  <privileges>
+    <privilege>http://tizen.org/privilege/internet</privilege>
+    <privilege>http://tizen.org/privilege/network.get</privilege>
+  </privileges>
+</manifest>
