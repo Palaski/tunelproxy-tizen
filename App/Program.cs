@@ -20,6 +20,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Tizen.NUI;
 using Tizen.NUI.BaseComponents;
+using Path = System.IO.Path;
+using File = System.IO.File;
 
 namespace TunelProxy
 {
