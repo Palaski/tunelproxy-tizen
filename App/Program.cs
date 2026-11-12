@@ -27,7 +27,8 @@ namespace TunelProxy
 {
     class Program : NUIApplication
     {
-        const int PortaProxy = 8080;
+        // 8080 já é usada por serviços da própria TV Samsung.
+        const int PortaProxy = 18080;
         const int PortaConfig = 8081;
         const string ServidorPadrao = "http://line.march93.xyz";
         const int MaxLinhas = 300;
@@ -48,6 +49,8 @@ namespace TunelProxy
         readonly object _lockProc = new object();
         Process _proc;
         int _geracao;
+        int _falhasSeguidas;
+        DateTime _inicioProc;
         volatile bool _encerrando;
         string _statusAtual = "Iniciando…";
 
@@ -194,6 +197,8 @@ namespace TunelProxy
 
             if (linha.Contains("túnel OK")) DefinirStatus("Túnel ativo", Verde);
             else if (linha.Contains("AVISO: túnel")) DefinirStatus("Túnel sem conexão com o servidor", Amarelo);
+            else if (linha.Contains("address already in use")) DefinirStatus($"Porta {PortaProxy} ocupada por outro app da TV", Vermelho);
+            else if (linha.Contains("WireGuard:")) DefinirStatus("Configuração do WireGuard com problema", Vermelho);
         }
 
         // ---- Processo do túnel -----------------------------------------------
@@ -252,6 +257,7 @@ namespace TunelProxy
                 p.BeginOutputReadLine();
                 p.BeginErrorReadLine();
                 _proc = p;
+                _inicioProc = DateTime.UtcNow;
                 DefinirStatus("Conectando o túnel…", Amarelo);
                 Log("túnel iniciado (pid " + p.Id + ")");
             }
@@ -261,13 +267,24 @@ namespace TunelProxy
         {
             int codigo = -1;
             try { codigo = p.ExitCode; } catch { }
+            int espera;
             lock (_lockProc)
             {
                 if (_encerrando || geracao != _geracao) return;
+                // Se cai logo ao abrir, é erro de configuração: espera cada vez mais.
+                bool rapida = DateTime.UtcNow - _inicioProc < TimeSpan.FromSeconds(30);
+                _falhasSeguidas = rapida ? _falhasSeguidas + 1 : 0;
+                espera = Math.Min(60, 5 * Math.Max(1, _falhasSeguidas));
             }
-            Log("túnel parou (código " + codigo + "), tentando de novo em 5s");
-            DefinirStatus("Túnel parou, reiniciando…", Vermelho);
-            Task.Delay(5000).ContinueWith(_ => IniciarProxy());
+            Log("túnel parou (código " + codigo + "), tentando de novo em " + espera + "s");
+            if (!_statusAtual.Contains("ocupada") && !_statusAtual.Contains("WireGuard"))
+                DefinirStatus("Túnel parou, reiniciando…", Vermelho);
+            int g = geracao;
+            Task.Delay(espera * 1000).ContinueWith(_ =>
+            {
+                lock (_lockProc) { if (g != _geracao) return; }
+                IniciarProxy();
+            });
         }
 
         void Parar()
@@ -275,6 +292,7 @@ namespace TunelProxy
             lock (_lockProc)
             {
                 _geracao++;
+                _falhasSeguidas = 0;
                 if (_proc == null) return;
                 try
                 {

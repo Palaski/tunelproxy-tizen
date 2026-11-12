@@ -19,7 +19,7 @@ operadora bloqueia o servidor.
    (Proton) e salve.
 4. Quando aparecer "Túnel ativo", aperte Voltar (o app fica rodando atrás).
 5. No M3U IPTV, use uma conta Xtream Codes com servidor
-   `http://127.0.0.1:8080` e o seu usuário e senha.
+   `http://127.0.0.1:18080` e o seu usuário e senha.
 
 A configuração do WireGuard fica só na TV; nunca vai para o repositório.
 
